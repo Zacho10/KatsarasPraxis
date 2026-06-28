@@ -47,7 +47,7 @@
       password: form.get("password")
     });
     if (error) {
-      authError.textContent = "Anmeldung fehlgeschlagen. Bitte Zugangsdaten prüfen.";
+      authError.textContent = authMessage(error);
     }
   });
 
@@ -67,5 +67,16 @@
         : "Bitte anmelden, um Patientendaten zu öffnen.";
     }
     window.dispatchEvent(new CustomEvent("katsaras-auth-ready", { detail: window.katsarasAuth }));
+  }
+
+  function authMessage(error) {
+    const message = error?.message || "";
+    if (message.toLowerCase().includes("email not confirmed")) {
+      return "E-Mail ist noch nicht bestätigt. Bitte den Benutzer in Supabase bestätigen oder E-Mail-Bestätigung deaktivieren.";
+    }
+    if (message.toLowerCase().includes("invalid login credentials")) {
+      return "Falsche Zugangsdaten. Bitte E-Mail und Passwort genau prüfen.";
+    }
+    return `Anmeldung fehlgeschlagen: ${message}`;
   }
 })();
