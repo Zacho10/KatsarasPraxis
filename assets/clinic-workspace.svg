@@ -1,0 +1,21 @@
+<svg width="520" height="360" viewBox="0 0 520 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Medical workspace illustration</title>
+  <desc id="desc">A doctor's tablet, calendar, and patient chart on a clinical desk.</desc>
+  <rect width="520" height="360" rx="28" fill="#eef7f6"/>
+  <circle cx="426" cy="80" r="52" fill="#ffd166"/>
+  <rect x="74" y="72" width="254" height="180" rx="18" fill="#22313f"/>
+  <rect x="92" y="92" width="218" height="140" rx="12" fill="#f9fbfb"/>
+  <rect x="116" y="118" width="76" height="10" rx="5" fill="#4f8f8c"/>
+  <rect x="116" y="144" width="150" height="8" rx="4" fill="#ced9db"/>
+  <rect x="116" y="164" width="128" height="8" rx="4" fill="#ced9db"/>
+  <rect x="116" y="184" width="164" height="8" rx="4" fill="#ced9db"/>
+  <path d="M257 115h16v16h16v16h-16v16h-16v-16h-16v-16h16v-16z" fill="#2a9d8f"/>
+  <rect x="270" y="142" width="146" height="150" rx="18" fill="#ffffff"/>
+  <rect x="292" y="166" width="34" height="28" rx="6" fill="#e76f51"/>
+  <rect x="338" y="166" width="34" height="28" rx="6" fill="#2a9d8f"/>
+  <rect x="292" y="206" width="34" height="28" rx="6" fill="#e9c46a"/>
+  <rect x="338" y="206" width="34" height="28" rx="6" fill="#457b9d"/>
+  <rect x="292" y="250" width="86" height="10" rx="5" fill="#c8d5d8"/>
+  <rect x="70" y="276" width="390" height="18" rx="9" fill="#d9e8e6"/>
+  <rect x="150" y="252" width="102" height="24" rx="12" fill="#495867"/>
+</svg>
