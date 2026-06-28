@@ -43,8 +43,8 @@
     authError.textContent = "";
     const form = new FormData(authForm);
     const { error } = await client.auth.signInWithPassword({
-      email: form.get("email"),
-      password: form.get("password")
+      email: String(form.get("email")).trim(),
+      password: String(form.get("password")).trim()
     });
     if (error) {
       authError.textContent = authMessage(error);
