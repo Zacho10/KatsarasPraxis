@@ -233,14 +233,17 @@
 
     <dialog id="patient-dialog" class="modal">
       <form method="dialog" id="patient-form">
+        <input name="patientId" type="hidden" />
         <div class="modal-header">
-          <h2>Patient hinzufügen</h2>
+          <h2 id="patient-dialog-title">Patient hinzufügen</h2>
           <button class="icon-button" value="cancel" type="submit" formnovalidate aria-label="Schließen">×</button>
         </div>
         <div class="form-grid">
           <label>Name<input name="name" required /></label>
           <label>Alter<input name="age" type="number" min="0" max="120" required /></label>
           <label>Telefon<input name="phone" required /></label>
+          <label>Versicherung<input name="insurance" placeholder="Kasse / privat" /></label>
+          <label class="wide">Adresse<input name="address" placeholder="Straße, PLZ, Ort" /></label>
           <label>Risiko
             <select name="risk">
               <option value="Stable">Stabil</option>
@@ -256,7 +259,7 @@
         </div>
         <div class="modal-actions">
           <button class="button secondary" value="cancel" type="submit" formnovalidate>Abbrechen</button>
-          <button class="button primary" value="default" type="submit">Patient speichern</button>
+          <button class="button primary" id="patient-save-label" value="default" type="submit">Patient speichern</button>
         </div>
       </form>
     </dialog>
@@ -337,6 +340,75 @@
         <div class="modal-actions">
           <button class="button secondary" value="cancel" type="submit" formnovalidate>Abbrechen</button>
           <button class="button primary" value="default" type="submit">Befund speichern</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="document-dialog" class="modal">
+      <form method="dialog" id="document-form">
+        <div class="modal-header">
+          <h2>Dokument hinzufügen</h2>
+          <button class="icon-button" value="cancel" type="submit" formnovalidate aria-label="Schließen">×</button>
+        </div>
+        <div class="form-grid">
+          <label>Titel<input name="title" required placeholder="Beispiel: GDPR Einwilligung" /></label>
+          <label>Datum<input name="date" type="date" required /></label>
+          <label>Kategorie
+            <select name="category">
+              <option value="GDPR">GDPR</option>
+              <option value="Findings">Befund</option>
+              <option value="Exam">Untersuchung</option>
+              <option value="Referral">Überweisung</option>
+              <option value="Insurance">Versicherung</option>
+              <option value="Other">Sonstiges</option>
+            </select>
+          </label>
+          <label class="wide">Datei<input name="file" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" required /></label>
+          <label class="wide">Notizen<textarea name="notes" rows="3" placeholder="Kurznotiz zum Dokument"></textarea></label>
+        </div>
+        <div class="modal-actions">
+          <button class="button secondary" value="cancel" type="submit" formnovalidate>Abbrechen</button>
+          <button class="button primary" value="default" type="submit">Dokument speichern</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="prescription-dialog" class="modal">
+      <form method="dialog" id="prescription-form">
+        <input name="sourcePrescriptionId" type="hidden" />
+        <div class="modal-header">
+          <h2 id="prescription-dialog-title">Rezept hinzufügen</h2>
+          <button class="icon-button" value="cancel" type="submit" formnovalidate aria-label="Schließen">×</button>
+        </div>
+        <div class="form-grid">
+          <label>Medikament<input name="medication" required placeholder="Wirkstoff / Handelsname" /></label>
+          <label>Datum<input name="date" type="date" required /></label>
+          <label>Dosierung<input name="dosage" required placeholder="z.B. 1-0-1" /></label>
+          <label>Menge<input name="quantity" placeholder="z.B. N3 / 90 Tbl." /></label>
+          <label>Dauer<input name="duration" placeholder="z.B. 3 Monate" /></label>
+          <label>Gültig bis<input name="validUntil" type="date" /></label>
+          <label class="wide">Anweisungen<textarea name="instructions" rows="3" placeholder="Einnahmehinweise"></textarea></label>
+          <label class="wide">Notizen<textarea name="notes" rows="3" placeholder="Interne Notiz"></textarea></label>
+        </div>
+        <div class="modal-actions">
+          <button class="button secondary" value="cancel" type="submit" formnovalidate>Abbrechen</button>
+          <button class="button primary" value="default" type="submit">Rezept speichern</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="report-dialog" class="modal report-modal">
+      <form method="dialog" id="report-form">
+        <div class="modal-header">
+          <h2>Patientenbericht</h2>
+          <button class="icon-button" value="cancel" type="submit" formnovalidate aria-label="Schließen">×</button>
+        </div>
+        <label class="wide">Bericht bearbeiten
+          <textarea id="report-output" rows="18"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="button secondary" value="cancel" type="submit" formnovalidate>Schließen</button>
+          <button class="button primary" id="download-report-btn" value="cancel" type="button">Bericht herunterladen</button>
         </div>
       </form>
     </dialog>

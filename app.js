@@ -15,6 +15,8 @@ const seedData = {
       diagnosis: "Type 2 diabetes, hypertension",
       allergies: "Penicillin",
       medication: "Metformin, ramipril",
+      insurance: "Gesetzlich",
+      address: "Athen",
       notes: "HbA1c zuletzt erhöht. Medikamentenadhärenz und Fußstatus kontrollieren.",
       exams: [
         { name: "HbA1c", date: "2026-06-18", result: "8.4%", status: "Review" },
@@ -27,7 +29,14 @@ const seedData = {
       tasks: [
         { title: "HbA1c-Befund telefonisch besprechen", due: "Heute", priority: "High", done: false },
         { title: "Diabetologische Augenuntersuchung planen", due: "Diese Woche", priority: "Moderate", done: false }
-      ]
+      ],
+      documents: [
+        { id: "doc-p-1001-gdpr", title: "GDPR Einwilligung", category: "GDPR", date: "2026-05-21", notes: "Unterschriebene Einwilligung liegt vor.", file: null }
+      ],
+      prescriptions: [
+        { id: "rx-p-1001-metformin", medication: "Metformin", dosage: "1-0-1", quantity: "N3", duration: "3 Monate", date: "2026-05-21", validUntil: "2026-08-21", instructions: "Mit den Mahlzeiten einnehmen.", notes: "" }
+      ],
+      updatedAt: "2026-06-28T09:00:00.000Z"
     },
     {
       id: "p-1002",
@@ -38,6 +47,8 @@ const seedData = {
       diagnosis: "Asthma",
       allergies: "Dust mites",
       medication: "Budesonide/formoterol",
+      insurance: "Gesetzlich",
+      address: "Athen",
       notes: "Gute Kontrolle, berichtet saisonale Beschwerden. Inhalationstechnik prüfen.",
       exams: [
         { name: "Spirometrie", date: "2026-06-12", result: "FEV1 78%", status: "Done" }
@@ -47,7 +58,12 @@ const seedData = {
       ],
       tasks: [
         { title: "Inhalator-Rezept erneuern", due: "Morgen", priority: "Moderate", done: false }
-      ]
+      ],
+      documents: [],
+      prescriptions: [
+        { id: "rx-p-1002-inhalator", medication: "Budesonide/formoterol", dosage: "2 Hub morgens und abends", quantity: "1 Inhalator", duration: "3 Monate", date: "2026-06-12", validUntil: "2026-09-12", instructions: "Nach Anwendung Mund ausspülen.", notes: "" }
+      ],
+      updatedAt: "2026-06-28T11:30:00.000Z"
     },
     {
       id: "p-1003",
@@ -58,6 +74,8 @@ const seedData = {
       diagnosis: "Migraine",
       allergies: "Keine bekannt",
       medication: "Sumatriptan as needed",
+      insurance: "Privat",
+      address: "Athen",
       notes: "Trigger nach Schlafanpassung gebessert. Kopfschmerztagebuch fortführen.",
       exams: [
         { name: "MRT Schädel", date: "2026-04-18", result: "Kein akuter Befund", status: "Done" }
@@ -67,7 +85,10 @@ const seedData = {
       ],
       tasks: [
         { title: "Kopfschmerztagebuch prüfen", due: "30. Juni", priority: "Low", done: false }
-      ]
+      ],
+      documents: [],
+      prescriptions: [],
+      updatedAt: "2026-06-28T12:00:00.000Z"
     },
     {
       id: "p-1004",
@@ -78,6 +99,8 @@ const seedData = {
       diagnosis: "Coronary artery disease",
       allergies: "Ibuprofen",
       medication: "Atorvastatin, aspirin, bisoprolol",
+      insurance: "Gesetzlich",
+      address: "Athen",
       notes: "Thorakales Druckgefühl letzte Woche. Belastungstest-Befund aus der Kardiologie ausstehend.",
       exams: [
         { name: "Belastungstest", date: "2026-06-25", result: "Ausstehend", status: "Pending" }
@@ -87,7 +110,10 @@ const seedData = {
       ],
       tasks: [
         { title: "Kardiologiebericht anfordern", due: "Heute", priority: "High", done: false }
-      ]
+      ],
+      documents: [],
+      prescriptions: [],
+      updatedAt: "2026-06-28T12:15:00.000Z"
     }
   ]
 };
@@ -120,17 +146,23 @@ const els = {
   visitDialog: document.querySelector("#visit-dialog"),
   taskDialog: document.querySelector("#task-dialog"),
   examDialog: document.querySelector("#exam-dialog"),
+  documentDialog: document.querySelector("#document-dialog"),
+  prescriptionDialog: document.querySelector("#prescription-dialog"),
+  reportDialog: document.querySelector("#report-dialog"),
   patientForm: document.querySelector("#patient-form"),
   visitForm: document.querySelector("#visit-form"),
   taskForm: document.querySelector("#task-form"),
-  examForm: document.querySelector("#exam-form")
+  examForm: document.querySelector("#exam-form"),
+  documentForm: document.querySelector("#document-form"),
+  prescriptionForm: document.querySelector("#prescription-form"),
+  reportOutput: document.querySelector("#report-output")
 };
 
 document.querySelectorAll(".nav-item").forEach((button) => {
   button.addEventListener("click", () => setView(button.dataset.view));
 });
 
-document.querySelector("#new-patient-btn").addEventListener("click", () => els.patientDialog.showModal());
+document.querySelector("#new-patient-btn").addEventListener("click", () => openPatientDialog());
 document.querySelector("#quick-visit-btn").addEventListener("click", openVisitDialog);
 document.querySelector("#new-appointment-btn").addEventListener("click", openVisitDialog);
 document.querySelector("#prev-month-btn").addEventListener("click", () => moveCalendarMonth(-1));
@@ -141,6 +173,7 @@ document.querySelector("#today-month-btn").addEventListener("click", () => {
 document.querySelector("#next-month-btn").addEventListener("click", () => moveCalendarMonth(1));
 document.querySelector("#new-task-btn").addEventListener("click", () => openTaskDialog());
 document.querySelector("#export-btn").addEventListener("click", exportData);
+document.querySelector("#download-report-btn").addEventListener("click", downloadCurrentReport);
 els.search.addEventListener("input", render);
 els.riskFilter.addEventListener("change", renderPatients);
 els.taskStatusFilter.addEventListener("change", renderTasks);
@@ -151,30 +184,45 @@ els.patientForm.addEventListener("submit", async (event) => {
   if (event.submitter?.value === "cancel") return;
   event.preventDefault();
   const form = new FormData(els.patientForm);
+  const existingPatient = findPatient(form.get("patientId"));
   const photoFile = form.get("photo");
-  let photo = null;
+  let photo = existingPatient?.photo || null;
   try {
-    photo = photoFile?.size ? await readStoredFile(photoFile) : null;
+    photo = photoFile?.size ? await readStoredFile(photoFile) : photo;
   } catch {
     return;
   }
-  const patient = {
-    id: `p-${Date.now()}`,
+  const patientFields = {
     name: form.get("name").trim(),
     age: Number(form.get("age")),
     phone: form.get("phone").trim(),
+    insurance: form.get("insurance").trim() || "Nicht dokumentiert",
+    address: form.get("address").trim() || "Nicht dokumentiert",
     risk: form.get("risk"),
     diagnosis: form.get("diagnosis").trim(),
     medication: form.get("medication").trim() || "Nicht dokumentiert",
     allergies: form.get("allergies").trim() || "Keine bekannt",
     notes: form.get("notes").trim() || "Noch keine Notizen.",
     photo,
-    exams: [],
-    visits: [],
-    tasks: [{ id: `t-${Date.now()}-intake`, title: "Aufnahme prüfen", due: "Heute", priority: "Moderate", notes: "", done: false }]
+    updatedAt: new Date().toISOString()
   };
-  data.patients.unshift(patient);
-  selectedPatientId = patient.id;
+
+  if (existingPatient) {
+    Object.assign(existingPatient, patientFields);
+    selectedPatientId = existingPatient.id;
+  } else {
+    const patient = {
+      id: `p-${Date.now()}`,
+      ...patientFields,
+      exams: [],
+      visits: [],
+      tasks: [{ id: `t-${Date.now()}-intake`, title: "Aufnahme prüfen", due: "Heute", priority: "Moderate", notes: "", done: false }],
+      documents: [],
+      prescriptions: []
+    };
+    data.patients.unshift(patient);
+    selectedPatientId = patient.id;
+  }
   saveData();
   els.patientForm.reset();
   els.patientDialog.close();
@@ -249,6 +297,59 @@ els.examForm.addEventListener("submit", async (event) => {
   render();
 });
 
+els.documentForm.addEventListener("submit", async (event) => {
+  if (event.submitter?.value === "cancel") return;
+  event.preventDefault();
+  const patient = findPatient(selectedPatientId);
+  if (!patient) return;
+  const form = new FormData(els.documentForm);
+  const file = form.get("file");
+  let storedFile = null;
+  try {
+    storedFile = file?.size ? await readStoredFile(file) : null;
+  } catch {
+    return;
+  }
+  patient.documents.unshift({
+    id: makeId("doc"),
+    title: form.get("title").trim(),
+    category: form.get("category"),
+    date: form.get("date"),
+    notes: form.get("notes").trim(),
+    file: storedFile
+  });
+  patient.updatedAt = new Date().toISOString();
+  saveData();
+  els.documentForm.reset();
+  els.documentDialog.close();
+  render();
+});
+
+els.prescriptionForm.addEventListener("submit", (event) => {
+  if (event.submitter?.value === "cancel") return;
+  event.preventDefault();
+  const patient = findPatient(selectedPatientId);
+  if (!patient) return;
+  const form = new FormData(els.prescriptionForm);
+  patient.prescriptions.unshift({
+    id: makeId("rx"),
+    medication: form.get("medication").trim(),
+    dosage: form.get("dosage").trim(),
+    quantity: form.get("quantity").trim() || "Nicht dokumentiert",
+    duration: form.get("duration").trim() || "Nicht dokumentiert",
+    date: form.get("date"),
+    validUntil: form.get("validUntil"),
+    instructions: form.get("instructions").trim(),
+    notes: form.get("notes").trim(),
+    repeatedFrom: form.get("sourcePrescriptionId") || ""
+  });
+  patient.updatedAt = new Date().toISOString();
+  saveData();
+  els.prescriptionForm.reset();
+  els.prescriptionDialog.close();
+  render();
+});
+
 render();
 
 function loadData() {
@@ -300,7 +401,15 @@ function renderPatients() {
   const query = els.search.value.trim().toLowerCase();
   const risk = els.riskFilter.value;
   const patients = data.patients.filter((patient) => {
-    const haystack = [patient.name, patient.diagnosis, patient.medication, patient.notes, patient.exams.map((exam) => `${exam.name} ${exam.file?.name || ""}`).join(" ")].join(" ").toLowerCase();
+    const haystack = [
+      patient.name,
+      patient.diagnosis,
+      patient.medication,
+      patient.notes,
+      patient.documents.map((item) => `${item.title} ${item.category} ${item.file?.name || ""}`).join(" "),
+      patient.prescriptions.map((item) => `${item.medication} ${item.dosage}`).join(" "),
+      patient.exams.map((exam) => `${exam.name} ${exam.file?.name || ""}`).join(" ")
+    ].join(" ").toLowerCase();
     return (!query || haystack.includes(query)) && (risk === "all" || patient.risk === risk);
   });
 
@@ -321,6 +430,7 @@ function renderPatients() {
       <div class="card-meta-row">
         <span class="tag">${patientFileCount(patient)} Dateien</span>
         <span class="tag">${patient.exams.length} Befunde</span>
+        <span class="tag">${patient.prescriptions.length} Rezepte</span>
       </div>
       <button class="button secondary" type="button" data-select="${patient.id}">Akte öffnen</button>
     </article>
@@ -348,6 +458,7 @@ function renderSelectedPatient() {
   const latestVisit = [...patient.visits].sort(sortByDateTime).at(-1);
   const pendingExam = patient.exams.find((exam) => exam.status === "Pending" || exam.status === "Review");
   const files = patientFiles(patient);
+  const missingGdpr = !patient.documents.some((document) => document.category === "GDPR");
   els.patientDetail.classList.remove("empty-state");
   els.patientDetail.innerHTML = `
     <div class="patient-header">
@@ -359,6 +470,11 @@ function renderSelectedPatient() {
         </div>
       </div>
       <div class="record-actions">
+        <button class="button secondary" type="button" id="edit-patient-selected">Bearbeiten</button>
+        <button class="button secondary" type="button" id="download-patient-selected">Download</button>
+        <button class="button secondary" type="button" id="report-patient-selected">Report</button>
+        <button class="button secondary" type="button" id="add-document-selected">Dokument</button>
+        <button class="button secondary" type="button" id="add-prescription-selected">Rezept</button>
         <button class="button secondary" type="button" id="add-exam-selected">Befunddatei</button>
         <button class="button primary" type="button" id="add-visit-selected">Termin</button>
       </div>
@@ -367,6 +483,9 @@ function renderSelectedPatient() {
       <div class="detail-box"><span>Diagnose</span><strong>${escapeHtml(patient.diagnosis)}</strong></div>
       <div class="detail-box"><span>Medikation</span><strong>${escapeHtml(patient.medication)}</strong></div>
       <div class="detail-box"><span>Allergien</span><strong>${escapeHtml(patient.allergies)}</strong></div>
+      <div class="detail-box"><span>Versicherung</span><strong>${escapeHtml(patient.insurance)}</strong></div>
+      <div class="detail-box"><span>Adresse</span><strong>${escapeHtml(patient.address)}</strong></div>
+      <div class="detail-box"><span>Aktualisiert</span><strong>${formatDateTime(patient.updatedAt)}</strong></div>
     </div>
     <section>
       <h3>Klinische Notizen</h3>
@@ -381,6 +500,17 @@ function renderSelectedPatient() {
       ${patient.exams.map(examTemplate).join("") || `<p class="empty-state">Keine Befunde dokumentiert.</p>`}
     </section>
     <section>
+      <div class="section-subheading">
+        <h3>Gescannte Dokumente</h3>
+        ${missingGdpr ? `<span class="risk-badge High">GDPR fehlt</span>` : `<span class="risk-badge Stable">GDPR vorhanden</span>`}
+      </div>
+      ${patient.documents.map(documentTemplate).join("") || `<p class="empty-state">Noch keine Dokumente hinterlegt.</p>`}
+    </section>
+    <section>
+      <h3>Rezepte</h3>
+      ${patient.prescriptions.map(prescriptionTemplate).join("") || `<p class="empty-state">Noch keine Rezepte dokumentiert.</p>`}
+    </section>
+    <section>
       <h3>Dateien</h3>
       <div class="file-list">
         ${files.map(fileTemplate).join("") || `<p class="empty-state">Noch keine Dateien hinterlegt.</p>`}
@@ -388,10 +518,18 @@ function renderSelectedPatient() {
     </section>
     ${pendingExam ? `<div class="snapshot-item"><strong>Zu prüfen:</strong> ${escapeHtml(pendingExam.name)} ist als ${statusLabel(pendingExam.status)} markiert.</div>` : ""}
   `;
+  document.querySelector("#edit-patient-selected").addEventListener("click", () => openPatientDialog(patient.id));
+  document.querySelector("#download-patient-selected").addEventListener("click", () => downloadPatientRecord(patient.id));
+  document.querySelector("#report-patient-selected").addEventListener("click", () => openReportDialog(patient.id));
+  document.querySelector("#add-document-selected").addEventListener("click", openDocumentDialog);
+  document.querySelector("#add-prescription-selected").addEventListener("click", () => openPrescriptionDialog());
   document.querySelector("#add-visit-selected").addEventListener("click", openVisitDialog);
   document.querySelector("#add-exam-selected").addEventListener("click", openExamDialog);
   document.querySelectorAll("[data-exam-status]").forEach((select) => {
     select.addEventListener("change", handleExamStatusChange);
+  });
+  document.querySelectorAll("[data-repeat-prescription]").forEach((button) => {
+    button.addEventListener("click", () => openPrescriptionDialog(button.dataset.repeatPrescription));
   });
 }
 
@@ -525,6 +663,29 @@ function renderTaskOptions() {
   els.taskPatientFilter.value = data.patients.some((patient) => patient.id === currentFilter) ? currentFilter : "all";
 }
 
+function openPatientDialog(patientId = "") {
+  const patient = findPatient(patientId);
+  els.patientForm.reset();
+  els.patientForm.elements.patientId.value = patient?.id || "";
+  document.querySelector("#patient-dialog-title").textContent = patient ? "Patient bearbeiten" : "Patient hinzufügen";
+  document.querySelector("#patient-save-label").textContent = patient ? "Änderungen speichern" : "Patient speichern";
+
+  if (patient) {
+    els.patientForm.elements.name.value = patient.name;
+    els.patientForm.elements.age.value = patient.age;
+    els.patientForm.elements.phone.value = patient.phone;
+    els.patientForm.elements.insurance.value = patient.insurance;
+    els.patientForm.elements.address.value = patient.address;
+    els.patientForm.elements.risk.value = patient.risk;
+    els.patientForm.elements.diagnosis.value = patient.diagnosis;
+    els.patientForm.elements.medication.value = patient.medication;
+    els.patientForm.elements.allergies.value = patient.allergies;
+    els.patientForm.elements.notes.value = patient.notes;
+  }
+
+  els.patientDialog.showModal();
+}
+
 function openVisitDialog() {
   els.visitForm.elements.patientId.value = selectedPatientId || data.patients[0]?.id || "";
   els.visitForm.elements.date.value = today;
@@ -545,6 +706,38 @@ function openExamDialog() {
   els.examDialog.showModal();
 }
 
+function openDocumentDialog() {
+  els.documentForm.reset();
+  els.documentForm.elements.date.value = today;
+  els.documentDialog.showModal();
+}
+
+function openPrescriptionDialog(sourcePrescriptionId = "") {
+  const patient = findPatient(selectedPatientId);
+  const source = patient?.prescriptions.find((prescription) => prescription.id === sourcePrescriptionId);
+  els.prescriptionForm.reset();
+  els.prescriptionForm.elements.sourcePrescriptionId.value = source?.id || "";
+  document.querySelector("#prescription-dialog-title").textContent = source ? "Rezept wiederholen" : "Rezept hinzufügen";
+
+  if (source) {
+    const nextUntil = addMonths(today, 3);
+    els.prescriptionForm.elements.medication.value = source.medication;
+    els.prescriptionForm.elements.dosage.value = source.dosage;
+    els.prescriptionForm.elements.quantity.value = source.quantity;
+    els.prescriptionForm.elements.duration.value = source.duration || "3 Monate";
+    els.prescriptionForm.elements.instructions.value = source.instructions;
+    els.prescriptionForm.elements.notes.value = source.notes;
+    els.prescriptionForm.elements.date.value = today;
+    els.prescriptionForm.elements.validUntil.value = nextUntil;
+  } else {
+    els.prescriptionForm.elements.date.value = today;
+    els.prescriptionForm.elements.validUntil.value = addMonths(today, 3);
+    els.prescriptionForm.elements.duration.value = "3 Monate";
+  }
+
+  els.prescriptionDialog.showModal();
+}
+
 function exportData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const link = document.createElement("a");
@@ -552,6 +745,110 @@ function exportData() {
   link.download = "katsaras-praxis-demo-daten.json";
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function downloadPatientRecord(patientId) {
+  const patient = findPatient(patientId);
+  if (!patient) return;
+  const report = generatePatientReport(patient);
+  const html = `<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(patient.name)} - Patientenakte</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.5; color: #10242b; margin: 32px; }
+    h1, h2 { margin-bottom: 6px; }
+    section { border-top: 1px solid #d2dddb; padding-top: 14px; margin-top: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    td, th { border: 1px solid #d2dddb; padding: 8px; text-align: left; vertical-align: top; }
+    .meta { color: #63737b; }
+    pre { white-space: pre-wrap; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(patient.name)}</h1>
+  <p class="meta">Antonios Katsaras Praxis · Export ${formatDate(today)}</p>
+  <section>
+    <h2>Stammdaten</h2>
+    <table>
+      <tr><th>Alter</th><td>${escapeHtml(patient.age)}</td></tr>
+      <tr><th>Telefon</th><td>${escapeHtml(patient.phone)}</td></tr>
+      <tr><th>Versicherung</th><td>${escapeHtml(patient.insurance)}</td></tr>
+      <tr><th>Adresse</th><td>${escapeHtml(patient.address)}</td></tr>
+      <tr><th>Risiko</th><td>${riskLabel(patient.risk)}</td></tr>
+      <tr><th>Diagnose</th><td>${escapeHtml(patient.diagnosis)}</td></tr>
+      <tr><th>Medikation</th><td>${escapeHtml(patient.medication)}</td></tr>
+      <tr><th>Allergien</th><td>${escapeHtml(patient.allergies)}</td></tr>
+    </table>
+  </section>
+  <section><h2>Automatischer Bericht</h2><pre>${escapeHtml(report)}</pre></section>
+  <section><h2>Termine</h2>${tableFromRows(patient.visits, ["date", "time", "type", "reason", "plan"])}</section>
+  <section><h2>Befunde</h2>${tableFromRows(patient.exams, ["date", "name", "status", "result"])}</section>
+  <section><h2>Dokumente</h2>${tableFromRows(patient.documents, ["date", "category", "title", "notes"])}</section>
+  <section><h2>Rezepte</h2>${tableFromRows(patient.prescriptions, ["date", "medication", "dosage", "quantity", "duration", "validUntil", "instructions", "notes"])}</section>
+  <section><h2>Aufgaben</h2>${tableFromRows(patient.tasks, ["title", "due", "priority", "done", "notes"])}</section>
+</body>
+</html>`;
+  downloadText(`${slugify(patient.name)}-patientenakte.html`, html, "text/html");
+}
+
+function openReportDialog(patientId) {
+  const patient = findPatient(patientId);
+  if (!patient) return;
+  els.reportOutput.value = generatePatientReport(patient);
+  els.reportDialog.showModal();
+}
+
+function downloadCurrentReport() {
+  const patient = findPatient(selectedPatientId);
+  if (!patient) return;
+  downloadText(`${slugify(patient.name)}-bericht.txt`, els.reportOutput.value, "text/plain");
+}
+
+function generatePatientReport(patient) {
+  const latestVisit = [...patient.visits].sort(sortByDateTime).at(-1);
+  const openTasks = patient.tasks.filter((task) => !task.done);
+  const openReviews = patient.exams.filter((exam) => exam.status === "Pending" || exam.status === "Review");
+  const latestPrescription = [...patient.prescriptions].sort((a, b) => a.date.localeCompare(b.date)).at(-1);
+  const gdprStatus = patient.documents.some((item) => item.category === "GDPR") ? "GDPR-Einwilligung ist dokumentiert." : "GDPR-Einwilligung fehlt oder ist nicht dokumentiert.";
+
+  return [
+    `Patientenbericht - ${patient.name}`,
+    `Antonios Katsaras Praxis`,
+    `Erstellt am ${formatDate(today)}`,
+    "",
+    "Stammdaten",
+    `Alter: ${patient.age}`,
+    `Telefon: ${patient.phone}`,
+    `Versicherung: ${patient.insurance}`,
+    `Adresse: ${patient.address}`,
+    `Risikostufe: ${riskLabel(patient.risk)}`,
+    "",
+    "Klinische Zusammenfassung",
+    `Hauptdiagnose: ${patient.diagnosis}`,
+    `Aktuelle Medikation: ${patient.medication}`,
+    `Allergien: ${patient.allergies}`,
+    `Notizen: ${patient.notes}`,
+    "",
+    "Letzter Termin",
+    latestVisit
+      ? `${formatDate(latestVisit.date)} um ${latestVisit.time}: ${visitTypeLabel(latestVisit.type)} wegen ${latestVisit.reason}. Ergebnis/Plan: ${latestVisit.plan}`
+      : "Kein Termin dokumentiert.",
+    "",
+    "Offene Punkte",
+    openReviews.length ? `Zu prüfende Befunde: ${openReviews.map((exam) => `${exam.name} (${statusLabel(exam.status)})`).join(", ")}` : "Keine offenen Befunde.",
+    openTasks.length ? `Offene Aufgaben: ${openTasks.map((task) => `${task.title} - fällig ${task.due}`).join("; ")}` : "Keine offenen Aufgaben.",
+    gdprStatus,
+    "",
+    "Rezepte",
+    latestPrescription
+      ? `Letztes Rezept: ${latestPrescription.medication}, ${latestPrescription.dosage}, am ${formatDate(latestPrescription.date)}${latestPrescription.validUntil ? `, gültig bis ${formatDate(latestPrescription.validUntil)}` : ""}.`
+      : "Kein Rezept dokumentiert.",
+    "",
+    "Hinweis",
+    "Dieser Bericht ist ein Entwurf und muss vor Verwendung ärztlich geprüft und freigegeben werden."
+  ].join("\n");
 }
 
 function findPatient(id) {
@@ -563,7 +860,7 @@ function getTasks() {
 }
 
 function patientFiles(patient) {
-  return patient.exams
+  const examFiles = patient.exams
     .filter((exam) => exam.file)
     .map((exam) => ({
       ...exam.file,
@@ -571,6 +868,15 @@ function patientFiles(patient) {
       date: exam.date,
       status: exam.status
     }));
+  const documentFiles = patient.documents
+    .filter((item) => item.file)
+    .map((item) => ({
+      ...item.file,
+      examName: `${documentCategoryLabel(item.category)} · ${item.title}`,
+      date: item.date,
+      status: "Done"
+    }));
+  return [...examFiles, ...documentFiles];
 }
 
 function patientFileCount(patient) {
@@ -580,6 +886,9 @@ function patientFileCount(patient) {
 function normalizeData(source) {
   source.patients.forEach((patient, patientIndex) => {
     patient.photo = patient.photo || null;
+    patient.insurance = patient.insurance || "Nicht dokumentiert";
+    patient.address = patient.address || "Nicht dokumentiert";
+    patient.updatedAt = patient.updatedAt || "";
     patient.exams = (patient.exams || []).map((exam, examIndex) => ({
       id: exam.id || `exam-${patient.id || patientIndex}-${examIndex}`,
       name: exam.name || "Unbenannter Befund",
@@ -597,6 +906,26 @@ function normalizeData(source) {
       done: Boolean(task.done),
       createdAt: task.createdAt || "",
       completedAt: task.completedAt || ""
+    }));
+    patient.documents = (patient.documents || []).map((item, itemIndex) => ({
+      id: item.id || `doc-${patient.id || patientIndex}-${itemIndex}`,
+      title: item.title || "Unbenanntes Dokument",
+      category: item.category || "Other",
+      date: item.date || today,
+      notes: item.notes || "",
+      file: item.file || null
+    }));
+    patient.prescriptions = (patient.prescriptions || []).map((item, itemIndex) => ({
+      id: item.id || `rx-${patient.id || patientIndex}-${itemIndex}`,
+      medication: item.medication || "Nicht dokumentiert",
+      dosage: item.dosage || "Nicht dokumentiert",
+      quantity: item.quantity || "Nicht dokumentiert",
+      duration: item.duration || "Nicht dokumentiert",
+      date: item.date || today,
+      validUntil: item.validUntil || "",
+      instructions: item.instructions || "",
+      notes: item.notes || "",
+      repeatedFrom: item.repeatedFrom || ""
     }));
   });
   return source;
@@ -658,6 +987,44 @@ function fileTemplate(file) {
         ${escapeHtml(file.name)}
       </a>
       <p class="meta">${escapeHtml(file.examName)} · ${formatDate(file.date)} · ${statusLabel(file.status)}${file.size ? ` · ${formatFileSize(file.size)}` : ""}</p>
+    </div>
+  `;
+}
+
+function documentTemplate(item) {
+  const fileLink = item.file ? `
+    <a class="file-link" href="${item.file.dataUrl || "#"}" download="${escapeHtml(item.file.name)}" target="_blank" rel="noreferrer" ${item.file.id ? `data-file-id="${item.file.id}"` : ""}>
+      <span aria-hidden="true">▣</span>
+      ${escapeHtml(item.file.name)}
+    </a>
+  ` : `<span class="meta">Keine Datei hinterlegt</span>`;
+
+  return `
+    <div class="visit-row exam-row">
+      <span class="time-chip">${documentCategoryLabel(item.category)}</span>
+      <div class="exam-content">
+        <strong>${escapeHtml(item.title)}</strong>
+        <p class="meta">${formatDate(item.date)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}</p>
+        ${fileLink}
+      </div>
+    </div>
+  `;
+}
+
+function prescriptionTemplate(prescription) {
+  return `
+    <div class="visit-row exam-row">
+      <span class="time-chip">Rx</span>
+      <div class="exam-content">
+        <div class="exam-title-line">
+          <strong>${escapeHtml(prescription.medication)}</strong>
+          <button class="button secondary compact-action" type="button" data-repeat-prescription="${escapeHtml(prescription.id)}">Wiederholen</button>
+        </div>
+        <p class="meta">${formatDate(prescription.date)}${prescription.validUntil ? ` · gültig bis ${formatDate(prescription.validUntil)}` : ""}</p>
+        <p class="meta">Dosierung: ${escapeHtml(prescription.dosage)} · Menge: ${escapeHtml(prescription.quantity)} · Dauer: ${escapeHtml(prescription.duration)}</p>
+        ${prescription.instructions ? `<p class="meta">${escapeHtml(prescription.instructions)}</p>` : ""}
+        ${prescription.notes ? `<p class="meta">Notiz: ${escapeHtml(prescription.notes)}</p>` : ""}
+      </div>
     </div>
   `;
 }
@@ -779,6 +1146,17 @@ function statusLabel(status) {
   }[status] || status;
 }
 
+function documentCategoryLabel(category) {
+  return {
+    GDPR: "GDPR",
+    Findings: "Befund",
+    Exam: "Untersuchung",
+    Referral: "Überweisung",
+    Insurance: "Versicherung",
+    Other: "Sonstiges"
+  }[category] || category;
+}
+
 function visitTypeLabel(type) {
   return {
     Consultation: "Beratung",
@@ -793,7 +1171,13 @@ function initials(name) {
 }
 
 function formatDate(date) {
+  if (!date) return "Nicht dokumentiert";
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${date}T00:00:00`));
+}
+
+function formatDateTime(value) {
+  if (!value) return "Nicht dokumentiert";
+  return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
 }
 
 function formatShortDate(date) {
@@ -815,6 +1199,45 @@ function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function addMonths(dateKey, months) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setMonth(date.getMonth() + months);
+  return toDateKey(date);
+}
+
+function tableFromRows(rows, fields) {
+  if (!rows.length) return `<p>Keine Einträge.</p>`;
+  return `
+    <table>
+      <thead><tr>${fields.map((field) => `<th>${escapeHtml(field)}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${rows.map((row) => `
+          <tr>${fields.map((field) => `<td>${escapeHtml(formatExportValue(row[field]))}</td>`).join("")}</tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function formatExportValue(value) {
+  if (typeof value === "boolean") return value ? "Ja" : "Nein";
+  if (value === undefined || value === null || value === "") return "-";
+  return value;
+}
+
+function downloadText(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+function slugify(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "patient";
 }
 
 function visitTemplate(visit, patient, showPatient) {
